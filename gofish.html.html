@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Go Fish Game</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --accent: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --danger: #e74c3c;
+            --card-width: 70px;
+            --card-height: 105px;
+            --spacing-xs: 5px;
+            --spacing-sm: 10px;
+            --spacing-md: 15px;
+            --spacing-lg: 20px;
+            --spacing-xl: 30px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-sm);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: var(--spacing-sm);
+            width: 95%;
+            max-width: 1200px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: var(--spacing-md);
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #fdbb2d;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .player-count {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .session-info {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .deck-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: var(--spacing-md) 0;
+            position: relative;
+        }
+        
+        .deck {
+            width: 90px;
+            height: 135px;
+            background: linear-gradient(45deg, #006400, #228B22);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .deck::before {
+            content: "DECK";
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .deck-count {
+            position: absolute;
+            bottom: -25px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .players-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+        }
+        
+        .player-area {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .player-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #fdbb2d;
+        }
+        
+        .player-score {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+        
+        .player-hand {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            color: black;
+            font-weight: bold;
+            font-size: 1.2rem;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .card.red {
+            color: #d32f2f;
+        }
+        
+        .card.black {
+            color: #212121;
+        }
+        
+        .card-value {
+            font-size: 1.5rem;
+        }
+        
+        .card-suit {
+            font-size: 1.8rem;
+            margin-top: 5px;
+        }
+        
+        .card-back {
+            background: linear-gradient(45deg, #b71c1c, #4a148c);
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        .player-books {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-top: auto;
+        }
+        
+        .book {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .current-player {
+            border: 3px solid var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+        }
+        
+        .message-area {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: var(--spacing-md);
+            border-radius: 10px;
+            margin: var(--spacing-md) 0;
+            min-height: 60px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+        
+        button {
+            background-color: var(--accent);
+            color: #212121;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            text-align: center;
+        }
+        
+        button:hover {
+            background-color: #ff9800;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:disabled {
+            background-color: #9e9e9e;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .game-over.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .game-over-content {
+            background-color: rgba(253, 187, 45, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            color: #212121;
+        }
+        
+        .game-over h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1a2a6c;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .opponent-selection {
+            display: none;
+            margin: var(--spacing-md) 0;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .opponent-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .opponent-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid var(--accent);
+            border-radius: 15px;
+            padding: 8px 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .opponent-btn:hover {
+            background-color: var(--accent);
+            transform: scale(1.05);
+        }
+        
+        .floating-action-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 900;
+            font-size: 1.5rem;
+            color: white;
+            display: none;
+        }
+        
+        /* Mobile-specific adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .player-name {
+                font-size: 1.1rem;
+            }
+            
+            .player-score {
+                font-size: 0.9rem;
+            }
+            
+            .card {
+                width: 60px;
+                height: 90px;
+                font-size: 1rem;
+            }
+            
+            .card-value {
+                font-size: 1.2rem;
+            }
+            
+            .card-suit {
+                font-size: 1.4rem;
+            }
+            
+            .deck {
+                width: 70px;
+                height: 105px;
+            }
+            
+            .mode-btn {
+                min-width: 150px;
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            
+            .opponent-btn {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Touch-friendly card selection */
+        .card.selected {
+            border: 3px solid #fdbb2d;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .book-progress {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .rules-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            z-index: 900;
+        }
+        
+        .rules-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .rules-modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .rules-content {
+            background-color: rgba(253, 187, 45, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            color: #212121;
+        }
+        
+        .rules-content h2 {
+            color: #1a2a6c;
+            margin-bottom: 15px;
+        }
+        
+        .rules-content ul {
+            list-style-type: disc;
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .rules-content li {
+            margin-bottom: 8px;
+        }
+        
+        .close-rules {
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Go Fish Game</h1>
+        
+        <!-- Game Mode Selection Screen -->
+        <div id="mode-selection" class="mode-selection">
+            <h2 class="mode-title">Choose Game Mode</h2>
+            <div class="mode-buttons">
+                <button id="single-player-btn" class="mode-btn single">Single Player</button>
+                <button id="multi-player-btn" class="mode-btn multi">Multiplayer</button>
+            </div>
+            <p>Play against computer opponents or challenge friends!</p>
+        </div>
+        
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="lobby-container" style="display: none;">
+            <h2>Game Lobby</h2>
+            <div id="create-game" class="lobby-info">
+                <button id="create-btn">Create New Game</button>
+                <p>Share the session code with your friends to join!</p>
+            </div>
+            
+            <div id="join-game" class="join-container" style="display: none;">
+                <h3>Join a Game</h3>
+                <div class="input-group">
+                    <input type="text" id="session-code-input" placeholder="Enter session code">
+                </div>
+                <button id="join-btn">Join Game</button>
+            </div>
+            
+            <div id="waiting-area" class="waiting-area" style="display: none;">
+                <h3>Waiting for Players</h3>
+                <div id="player-list" class="player-list"></div>
+                <p id="waiting-message">Waiting for more players to join...</p>
+                <button id="start-game-btn" style="display: none;">Start Game</button>
+            </div>
+        </div>
+        
+        <!-- Game Screen -->
+        <div id="game-screen" style="display: none;">
+            <div class="game-info">
+                <div class="player-count">Players: <span id="player-count">0</span></div>
+                <div class="session-info">Session: <span id="session-code">-</span></div>
+            </div>
+            
+            <div class="deck-area">
+                <div class="deck" id="deck">
+                    <div class="deck-count" id="deck-count">52 cards</div>
+                </div>
+            </div>
+            
+            <div class="players-container" id="players-container">
+                <!-- Players will be added here dynamically -->
+            </div>
+            
+            <div class="opponent-selection" id="opponent-selection">
+                <p>Ask which player?</p>
+                <div class="opponent-buttons" id="opponent-buttons">
+                    <!-- Opponent buttons will be added here dynamically -->
+                </div>
+            </div>
+            
+            <div class="message-area" id="message">
+                Waiting for game to start...
+            </div>
+            
+            <div class="controls">
+                <button id="ask-btn" disabled>Ask for Card</button>
+            </div>
+        </div>
+        
+        <div class="game-over" id="game-over">
+            <div class="game-over-content">
+                <h2 id="winner">Game Over!</h2>
+                <p id="final-score"></p>
+                <button id="play-again">Play Again</button>
+            </div>
+        </div>
+        
+        <!-- Rules Button -->
+        <div class="rules-btn" id="rules-btn">Game Rules</div>
+        
+        <!-- Rules Modal -->
+        <div class="rules-modal" id="rules-modal">
+            <div class="rules-content">
+                <h2>Go Fish - Rules</h2>
+                <ul>
+                    <li><strong>Objective:</strong> Collect the most "books" (sets of 4 cards of the same rank)</li>
+                    <li><strong>Setup:</strong> Each player receives 7 cards. The remaining cards form the draw pile.</li>
+                    <li><strong>Gameplay:</strong>
+                        <ul>
+                            <li>On your turn, ask another player for a specific rank of card that you already have.</li>
+                            <li>If they have that card, they must give you all cards of that rank.</li>
+                            <li>If they don't have that card, they say "Go Fish" and you draw a card from the pile.</li>
+                            <li>If you draw the card you asked for, you get another turn.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Books:</strong> When you collect all 4 cards of the same rank, you form a "book" and place those cards face up in front of you.</li>
+                    <li><strong>Game End:</strong> The game ends when all 13 books are collected or when the draw pile is empty and no more moves can be made.</li>
+                    <li><strong>Scoring:</strong> Each book is worth 1 point. The player with the most books wins!</li>
+                </ul>
+                <div class="close-rules">
+                    <button id="close-rules-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <!-- Mobile menu button -->
+    <div class="floating-action-btn" id="mobile-menu-btn">?</div>
+
+    <script>
+        // Game state
+        let deck = [];
+        let players = [];
+        let currentPlayerIndex = 0;
+        let selectedCard = null;
+        let gameInProgress = false;
+        let sessionId = null;
+        let isHost = false;
+        let gameMode = 'single'; // 'single' or 'multi'
+        
+        // Card values and suits
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const suits = ['♥', '♦', '♠', '♣'];
+        const suitColors = {
+            '♥': 'red',
+            '♦': 'red',
+            '♠': 'black',
+            '♣': 'black'
+        };
+        
+        // DOM elements
+        const modeSelectionEl = document.getElementById('mode-selection');
+        const lobbyScreenEl = document.getElementById('lobby-screen');
+        const gameScreenEl = document.getElementById('game-screen');
+        const createGameEl = document.getElementById('create-game');
+        const joinGameEl = document.getElementById('join-game');
+        const waitingAreaEl = document.getElementById('waiting-area');
+        const playerListEl = document.getElementById('player-list');
+        const waitingMessageEl = document.getElementById('waiting-message');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const playersContainerEl = document.getElementById('players-container');
+        const playerCountEl = document.getElementById('player-count');
+        const sessionCodeEl = document.getElementById('session-code');
+        const deckCountEl = document.getElementById('deck-count');
+        const messageEl = document.getElementById('message');
+        const askBtn = document.getElementById('ask-btn');
+        const gameOverEl = document.getElementById('game-over');
+        const winnerEl = document.getElementById('winner');
+        const finalScoreEl = document.getElementById('final-score');
+        const playAgainBtn = document.getElementById('play-again');
+        const notificationEl = document.getElementById('notification');
+        const opponentSelectionEl = document.getElementById('opponent-selection');
+        const opponentButtonsEl = document.getElementById('opponent-buttons');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const rulesBtn = document.getElementById('rules-btn');
+        const rulesModal = document.getElementById('rules-modal');
+        const closeRulesBtn = document.getElementById('close-rules-btn');
+        
+        // Initialize the game
+        function initGame() {
+            // Create and shuffle the deck
+            deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ value, suit });
+                }
+            }
+            shuffleDeck();
+            
+            // Deal cards
+            const cardsPerPlayer = players.length <= 3 ? 7 : 5;
+            for (let i = 0; i < cardsPerPlayer; i++) {
+                for (let player of players) {
+                    if (deck.length > 0) {
+                        player.hand.push(deck.pop());
+                    }
+                }
+            }
+            
+            // Sort hands
+            for (let player of players) {
+                player.hand.sort((a, b) => values.indexOf(a.value) - values.indexOf(b.value));
+            }
+            
+            // Check for initial books
+            for (let player of players) {
+                checkForBooks(player);
+            }
+            
+            // Update UI
+            updateUI();
+            
+            // Start the game
+            gameInProgress = true;
+            currentPlayerIndex = 0;
+            selectedCard = null;
+            askBtn.disabled = true;
+            
+            // Show game screen
+            modeSelectionEl.style.display = 'none';
+            lobbyScreenEl.style.display = 'none';
+            gameScreenEl.style.display = 'block';
+            
+            messageEl.textContent = `${players[currentPlayerIndex].name}'s turn. Select a card to ask for that rank.`;
+            
+            // If host, hide start game button
+            if (isHost) {
+                startGameBtn.style.display = 'none';
+            }
+            
+            showNotification("Game started!");
+        }
+        
+        // Shuffle the deck
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        
+        // Check for books (4 cards of the same rank)
+        function checkForBooks(player) {
+            const rankCounts = {};
+            
+            // Count cards by rank
+            for (let card of player.hand) {
+                if (!rankCounts[card.value]) {
+                    rankCounts[card.value] = [];
+                }
+                rankCounts[card.value].push(card);
+            }
+            
+            // Check for books
+            for (let rank in rankCounts) {
+                if (rankCounts[rank].length === 4) {
+                    player.books.push(rankCounts[rank]);
+                    // Remove these cards from hand
+                    player.hand = player.hand.filter(card => card.value !== rank);
+                }
+            }
+        }
+        
+        // Update the UI
+        function updateUI() {
+            // Update player count
+            playerCountEl.textContent = players.length;
+            
+            // Update session code
+            sessionCodeEl.textContent = sessionId;
+            
+            // Update deck count
+            deckCountEl.textContent = `${deck.length} cards`;
+            
+            // Clear players container
+            playersContainerEl.innerHTML = '';
+            
+            // Add player areas
+            for (let i = 0; i < players.length; i++) {
+                const player = players[i];
+                
+                const playerArea = document.createElement('div');
+                playerArea.className = 'player-area';
+                if (i === currentPlayerIndex && gameInProgress) {
+                    playerArea.classList.add('current-player');
+                }
+                
+                const playerHeader = document.createElement('div');
+                playerHeader.className = 'player-header';
+                
+                const playerName = document.createElement('div');
+                playerName.className = 'player-name';
+                playerName.textContent = player.name;
+                
+                const playerScore = document.createElement('div');
+                playerScore.className = 'player-score';
+                playerScore.textContent = `Books: ${player.books.length}`;
+                
+                playerHeader.appendChild(playerName);
+                playerHeader.appendChild(playerScore);
+                
+                const playerHand = document.createElement('div');
+                playerHand.className = 'player-hand';
+                
+                // Show computer's hand as face down cards
+                if (i > 0) {
+                    for (let j = 0; j < player.hand.length; j++) {
+                        const cardEl = document.createElement('div');
+                        cardEl.className = 'card card-back';
+                        cardEl.textContent = '?';
+                        playerHand.appendChild(cardEl);
+                    }
+                } else {
+                    // Show player's hand as face up cards
+                    for (let card of player.hand) {
+                        const cardEl = document.createElement('div');
+                        cardEl.className = `card ${suitColors[card.suit]}`;
+                        cardEl.innerHTML = `
+                            <div class="card-value">${card.value}</div>
+                            <div class="card-suit">${card.suit}</div>
+                        `;
+                        cardEl.addEventListener('click', () => selectCard(card));
+                        playerHand.appendChild(cardEl);
+                    }
+                }
+                
+                const playerBooks = document.createElement('div');
+                playerBooks.className = 'player-books';
+                
+                for (let book of player.books) {
+                    const bookEl = document.createElement('div');
+                    bookEl.className = 'book';
+                    bookEl.textContent = book[0].value;
+                    playerBooks.appendChild(bookEl);
+                }
+                
+                playerArea.appendChild(playerHeader);
+                playerArea.appendChild(playerHand);
+                playerArea.appendChild(playerBooks);
+                
+                playersContainerEl.appendChild(playerArea);
+            }
+            
+            // Enable/disable ask button
+            askBtn.disabled = !selectedCard || !gameInProgress || currentPlayerIndex !== 0;
+        }
+        
+        // Select a card from player's hand
+        function selectCard(card) {
+            if (!gameInProgress || currentPlayerIndex !== 0) return;
+            
+            selectedCard = card;
+            messageEl.textContent = `You selected ${card.value}. Tap "Ask for Card" to ask another player.`;
+            askBtn.disabled = false;
+            
+            // Highlight selected card
+            document.querySelectorAll('.card').forEach(cardEl => {
+                cardEl.classList.remove('selected');
+            });
+            
+            const index = players[0].hand.findIndex(c => c.value === card.value && c.suit === card.suit);
+            if (index !== -1) {
+                const cardElements = document.querySelectorAll('.player-hand .card');
+                if (cardElements[index]) {
+                    cardElements[index].classList.add('selected');
+                }
+            }
+        }
+        
+        // Player asks for a card
+        function playerAsk() {
+            if (!selectedCard || !gameInProgress || currentPlayerIndex !== 0) return;
+            
+            const rank = selectedCard.value;
+            messageEl.textContent = `You asked for ${rank}s...`;
+            
+            // Show opponent selection UI
+            opponentButtonsEl.innerHTML = '';
+            
+            // Create opponent buttons
+            players.slice(1).forEach((player, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'opponent-btn';
+                btn.textContent = player.name;
+                btn.addEventListener('click', () => handleOpponentResponse(index + 1, rank));
+                opponentButtonsEl.appendChild(btn);
+            });
+            
+            opponentSelectionEl.style.display = 'flex';
+        }
+        
+        // Handle opponent response
+        function handleOpponentResponse(opponentIndex, rank) {
+            opponentSelectionEl.style.display = 'none';
+            
+            const opponent = players[opponentIndex];
+            
+            // Check if opponent has the requested rank
+            const matchingCards = opponent.hand.filter(card => card.value === rank);
+            
+            setTimeout(() => {
+                if (matchingCards.length > 0) {
+                    messageEl.textContent = `${opponent.name} has ${matchingCards.length} ${rank}(s)!`;
+                    
+                    // Transfer cards from opponent to player
+                    matchingCards.forEach(card => {
+                        opponent.hand = opponent.hand.filter(c => !(c.value === card.value && c.suit === card.suit));
+                        players[0].hand.push(card);
+                    });
+                    
+                    // Sort player's hand
+                    players[0].hand.sort((a, b) => values.indexOf(a.value) - values.indexOf(b.value));
+                    
+                    // Check for books
+                    checkForBooks(players[0]);
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Player gets another turn
+                    selectedCard = null;
+                    askBtn.disabled = true;
+                    
+                    // Check for game over
+                    if (checkGameOver()) {
+                        endGame();
+                        return;
+                    }
+                    
+                    messageEl.textContent = "You got what you asked for! Your turn again.";
+                    showNotification("You got cards! Your turn again.");
+                } else {
+                    messageEl.textContent = `${opponent.name} says: Go Fish!`;
+                    
+                    setTimeout(() => {
+                        // Player draws a card
+                        if (deck.length > 0) {
+                            const drawnCard = deck.pop();
+                            players[0].hand.push(drawnCard);
+                            messageEl.textContent = `You drew a ${drawnCard.value} of ${drawnCard.suit}.`;
+                            
+                            // Check if drawn card matches requested rank
+                            if (drawnCard.value === rank) {
+                                messageEl.textContent += " It's a match! You get another turn.";
+                                
+                                // Check for books
+                                checkForBooks(players[0]);
+                                updateUI();
+                                
+                                // Check for game over
+                                if (checkGameOver()) {
+                                    endGame();
+                                    return;
+                                }
+                            } else {
+                                // Check for books
+                                checkForBooks(players[0]);
+                                updateUI();
+                                
+                                // Next player's turn
+                                messageEl.textContent += " Next player's turn.";
+                                selectedCard = null;
+                                askBtn.disabled = true;
+                                
+                                // Check for game over
+                                if (checkGameOver()) {
+                                    endGame();
+                                    return;
+                                }
+                                
+                                setTimeout(nextPlayer, 1500);
+                            }
+                        } else {
+                            messageEl.textContent = "The deck is empty! Next player's turn.";
+                            selectedCard = null;
+                            askBtn.disabled = true;
+                            
+                            // Next player's turn
+                            setTimeout(nextPlayer, 1500);
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        }
+        
+        // Computer's turn
+        function computerTurn() {
+            if (!gameInProgress) return;
+            
+            const currentPlayer = players[currentPlayerIndex];
+            
+            // If computer has no cards, draw from deck if possible
+            if (currentPlayer.hand.length === 0) {
+                if (deck.length > 0) {
+                    const drawnCard = deck.pop();
+                    currentPlayer.hand.push(drawnCard);
+                    messageEl.textContent = `${currentPlayer.name} had no cards and drew from the deck.`;
+                    checkForBooks(currentPlayer);
+                    updateUI();
+                    
+                    // Check for game over
+                    if (checkGameOver()) {
+                        endGame();
+                        return;
+                    }
+                    
+                    // Next player's turn
+                    setTimeout(nextPlayer, 1500);
+                    return;
+                } else {
+                    // No cards and no deck - next player
+                    messageEl.textContent = `${currentPlayer.name} has no cards and the deck is empty. Next player's turn.`;
+                    setTimeout(nextPlayer, 1500);
+                    return;
+                }
+            }
+            
+            // Select a random card from hand
+            const randomIndex = Math.floor(Math.random() * currentPlayer.hand.length);
+            const selectedCard = currentPlayer.hand[randomIndex];
+            const rank = selectedCard.value;
+            
+            messageEl.textContent = `${currentPlayer.name} asks for ${rank}s...`;
+            
+            // Select a random opponent (excluding self)
+            let opponents = players.filter((_, index) => index !== currentPlayerIndex);
+            const randomOpponentIndex = Math.floor(Math.random() * opponents.length);
+            const opponent = opponents[randomOpponentIndex];
+            
+            setTimeout(() => {
+                // Check if opponent has the requested rank
+                const matchingCards = opponent.hand.filter(card => card.value === rank);
+                
+                if (matchingCards.length > 0) {
+                    messageEl.textContent = `You have ${matchingCards.length} ${rank}(s)! ${currentPlayer.name} takes them.`;
+                    
+                    // Transfer cards from opponent to current player
+                    matchingCards.forEach(card => {
+                        opponent.hand = opponent.hand.filter(c => !(c.value === card.value && c.suit === card.suit));
+                        currentPlayer.hand.push(card);
+                    });
+                    
+                    // Sort hand
+                    currentPlayer.hand.sort((a, b) => values.indexOf(a.value) - values.indexOf(b.value));
+                    
+                    // Check for books
+                    checkForBooks(currentPlayer);
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Computer gets another turn
+                    setTimeout(computerTurn, 1500);
+                } else {
+                    messageEl.textContent = `You say: Go Fish!`;
+                    
+                    setTimeout(() => {
+                        // Computer draws a card
+                        if (deck.length > 0) {
+                            const drawnCard = deck.pop();
+                            currentPlayer.hand.push(drawnCard);
+                            messageEl.textContent = `${currentPlayer.name} drew a card from the deck.`;
+                            
+                            // Check if drawn card matches requested rank
+                            if (drawnCard.value === rank) {
+                                messageEl.textContent += " It's a match! Computer gets another turn.";
+                                
+                                // Check for books
+                                checkForBooks(currentPlayer);
+                                updateUI();
+                                
+                                // Computer's turn again
+                                setTimeout(computerTurn, 1500);
+                            } else {
+                                // Check for books
+                                checkForBooks(currentPlayer);
+                                updateUI();
+                                
+                                // Next player's turn
+                                messageEl.textContent += " Your turn now.";
+                                
+                                // Check for game over
+                                if (checkGameOver()) {
+                                    endGame();
+                                    return;
+                                }
+                                
+                                setTimeout(nextPlayer, 1500);
+                            }
+                        } else {
+                            messageEl.textContent = "The deck is empty! Your turn now.";
+                            
+                            // Next player's turn
+                            setTimeout(nextPlayer, 1500);
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        }
+        
+        // Move to next player
+        function nextPlayer() {
+            if (!gameInProgress) return;
+            
+            // Find next active player
+            let nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            
+            // Skip inactive players
+            while (!players[nextPlayerIndex].isActive && nextPlayerIndex !== currentPlayerIndex) {
+                nextPlayerIndex = (nextPlayerIndex + 1) % players.length;
+            }
+            
+            // If we looped back to current player, check if game is over
+            if (nextPlayerIndex === currentPlayerIndex) {
+                endGame();
+                return;
+            }
+            
+            currentPlayerIndex = nextPlayerIndex;
+            selectedCard = null;
+            
+            // Update UI
+            updateUI();
+            
+            // Handle turn
+            if (currentPlayerIndex === 0) {
+                messageEl.textContent = `${players[currentPlayerIndex].name}'s turn. Select a card to ask for that rank.`;
+                showNotification("Your turn!");
+            } else {
+                messageEl.textContent = `${players[currentPlayerIndex].name}'s turn.`;
+                showNotification(`${players[currentPlayerIndex].name}'s turn!`);
+                setTimeout(computerTurn, 1500);
+            }
+        }
+        
+        // Check if the game is over
+        function checkGameOver() {
+            // Game is over if:
+            // 1. All books are formed (13 books total)
+            // 2. Deck is empty and all players have no cards
+            const totalBooks = players.reduce((total, player) => total + player.books.length, 0);
+            
+            if (totalBooks === 13) {
+                return true;
+            }
+            
+            if (deck.length === 0 && players.every(player => player.hand.length === 0)) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // End the game and show results
+        function endGame() {
+            gameInProgress = false;
+            
+            // Find winner(s)
+            const maxBooks = Math.max(...players.map(player => player.books.length));
+            const winners = players.filter(player => player.books.length === maxBooks);
+            
+            if (winners.length === 1) {
+                winnerEl.textContent = `${winners[0].name} Wins!`;
+            } else {
+                winnerEl.textContent = "It's a Tie!";
+            }
+            
+            // Display final scores
+            finalScoreEl.innerHTML = players.map(player => 
+                `${player.name}: ${player.books.length} books`
+            ).join('<br>');
+            
+            gameOverEl.classList.add('show');
+        }
+        
+        // Generate a random session ID
+        function generateSessionId() {
+            return Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            notificationEl.textContent = message;
+            notificationEl.classList.add('show');
+            
+            setTimeout(() => {
+                notificationEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Create a new game session
+        function createGameSession() {
+            sessionId = generateSessionId();
+            players = [
+                { name: "You", hand: [], books: [], isActive: true }
+            ];
+            isHost = true;
+            
+            // Show waiting area
+            createGameEl.style.display = 'none';
+            joinGameEl.style.display = 'none';
+            waitingAreaEl.style.display = 'block';
+            
+            // Update player list
+            updatePlayerList();
+            
+            // Show start game button for host
+            startGameBtn.style.display = 'inline-block';
+            startGameBtn.addEventListener('click', initGame);
+            
+            messageEl.textContent = `Game session created! Share this code with your friends: ${sessionId}`;
+            showNotification(`Session code: ${sessionId}`);
+        }
+        
+        // Join an existing game session
+        function joinGameSession() {
+            const sessionCode = document.getElementById('session-code-input').value.trim().toUpperCase();
+            
+            if (!sessionCode) {
+                showNotification("Please enter a session code!");
+                return;
+            }
+            
+            // In a real implementation, this would connect to a server
+            // For this demo, we'll simulate joining a local game
+            sessionId = sessionCode;
+            
+            // Add player to the game
+            const playerName = prompt("Enter your name:", "Player " + (players.length + 1));
+            if (!playerName) return;
+            
+            players.push({ name: playerName, hand: [], books: [], isActive: true });
+            
+            // Show waiting area
+            createGameEl.style.display = 'none';
+            joinGameEl.style.display = 'none';
+            waitingAreaEl.style.display = 'block';
+            
+            // Update player list
+            updatePlayerList();
+            
+            messageEl.textContent = `Joined game session: ${sessionId}`;
+            showNotification(`Joined as ${playerName}`);
+        }
+        
+        // Update player list in waiting area
+        function updatePlayerList() {
+            playerListEl.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                playerItem.textContent = player.name;
+                playerListEl.appendChild(playerItem);
+            });
+            
+            waitingMessageEl.textContent = `Waiting for ${isHost ? 'more' : ''} players to join...`;
+        }
+        
+        // Start single player game
+        function startSinglePlayerGame() {
+            gameMode = 'single';
+            players = [
+                { name: "You", hand: [], books: [], isActive: true },
+                { name: "Computer 1", hand: [], books: [], isActive: true },
+                { name: "Computer 2", hand: [], books: [], isActive: true },
+                { name: "Computer 3", hand: [], books: [], isActive: true }
+            ];
+            
+            // Hide lobby and show game
+            modeSelectionEl.style.display = 'none';
+            lobbyScreenEl.style.display = 'none';
+            gameScreenEl.style.display = 'block';
+            
+            // Start the game
+            initGame();
+        }
+        
+        // Start multiplayer game
+        function startMultiplayerGame() {
+            gameMode = 'multi';
+            players = [
+                { name: "You", hand: [], books: [], isActive: true }
+            ];
+            
+            // Show lobby
+            modeSelectionEl.style.display = 'none';
+            lobbyScreenEl.style.display = 'block';
+            gameScreenEl.style.display = 'none';
+            
+            // Create a new session
+            createGameSession();
+        }
+        
+        // Event listeners
+        document.getElementById('single-player-btn').addEventListener('click', startSinglePlayerGame);
+        document.getElementById('multi-player-btn').addEventListener('click', startMultiplayerGame);
+        document.getElementById('create-btn').addEventListener('click', createGameSession);
+        document.getElementById('join-btn').addEventListener('click', joinGameSession);
+        askBtn.addEventListener('click', playerAsk);
+        playAgainBtn.addEventListener('click', () => {
+            gameOverEl.classList.remove('show');
+            modeSelectionEl.style.display = 'block';
+            gameScreenEl.style.display = 'none';
+        });
+        
+        // Mobile menu button
+        mobileMenuBtn.addEventListener('click', () => {
+            if (gameScreenEl.style.display === 'block') {
+                // Show game info
+                const info = `Session: ${sessionId}\nPlayers: ${players.length}\nYour books: ${players[0]?.books.length || 0}`;
+                alert(info);
+            } else {
+                // Show lobby info
+                const info = `Create a new game or join an existing one using the session code.`;
+                alert(info);
+            }
+        });
+        
+        // Rules modal
+        rulesBtn.addEventListener('click', () => {
+            rulesModal.classList.add('show');
+        });
+        
+        closeRulesBtn.addEventListener('click', () => {
+            rulesModal.classList.remove('show');
+        });
+        
+        // Handle touch events for better mobile experience
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.classList.contains('card') && gameInProgress && currentPlayerIndex === 0) {
+                const card = players[0].hand.find(c => 
+                    c.value === e.target.querySelector('.card-value')?.textContent && 
+                    c.suit === e.target.querySelector('.card-suit')?.textContent
+                );
+                if (card) {
+                    selectCard(card);
+                }
+            }
+        });
+        
+        // Initialize player names
+        document.getElementById('player1-name').value = 'You';
+        document.getElementById('player2-name').value = 'Computer 1';
+        document.getElementById('player3-name').value = 'Computer 2';
+        document.getElementById('player4-name').value = 'Computer 3';
+    </script>
+</body>
+</html>
